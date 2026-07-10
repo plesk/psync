@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/briandowns/spinner"
 	"github.com/fsnotify/fsevents"
 	"github.com/spf13/cobra"
 )
@@ -59,6 +60,9 @@ func trimPath(targetPath string) string {
 }
 
 func uploadFile(eventPath string, sourcePath string, targetPath string) {
+	s := spinner.New(spinner.CharSets[11], 100*time.Millisecond)
+	s.Start()
+
 	targetFullPath := filepath.Join(targetPath, strings.TrimPrefix(eventPath, sourcePath))
 	cmd := exec.Command("scp", "-r", eventPath, remoteHost+":"+targetFullPath)
 	err := cmd.Run()
@@ -66,6 +70,7 @@ func uploadFile(eventPath string, sourcePath string, targetPath string) {
 		log.Printf("File upload error: %s", err)
 	}
 
+	s.Stop()
 	log.Printf("Uploaded file %s -> %s:%s", eventPath, remoteHost, targetFullPath)
 }
 
