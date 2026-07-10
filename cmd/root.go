@@ -194,7 +194,11 @@ func runWatcher() {
 
 func init() {
 	currentWorkPath, _ = os.Getwd()
+
 	remoteHost = os.Getenv("REMOTE_HOST")
+	if remoteHost == "" {
+		log.Fatal("REMOTE_HOST is not set")
+	}
 
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 
