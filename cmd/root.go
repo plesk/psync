@@ -71,7 +71,7 @@ func uploadFile(eventPath string, sourcePath string, targetPath string) {
 	}
 
 	s.Stop()
-	log.Printf("Uploaded file %s -> %s:%s", eventPath, remoteHost, targetFullPath)
+	log.Printf("Updated %s:%s", remoteHost, targetFullPath)
 }
 
 func fileExists(name string) bool {
