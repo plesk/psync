@@ -175,12 +175,26 @@ func validateRemoteHost(remoteHost string) error {
 	return nil
 }
 
+func validateProductPresence(mappingRules map[string]string) error {
+	if mappingRules == nil {
+		return errors.New("unknown source tree")
+	}
+
+	for _, dir := range mappingRules {
+		sshArgs := []string{"-o", "BatchMode=yes", "-o", "ConnectTimeout=5", remoteHost, "test", "-d", dir}
+		if err := exec.Command("ssh", sshArgs...).Run(); err != nil {
+			return fmt.Errorf("remote directory %q does not exist on %s: %w", dir, remoteHost, err)
+		}
+		break
+	}
+
+	return nil
+}
+
 func runWatcher() {
 	mappingRules := getMappingRules()
-
-	if mappingRules == nil {
-		log.Println("Unknown source tree, exiting...")
-		return
+	if err := validateProductPresence(mappingRules); err != nil {
+		log.Fatal(err)
 	}
 
 	dev, _ := fsevents.DeviceForPath(".")
