@@ -3,6 +3,8 @@ package cmd
 import (
 	"encoding/json"
 	"encoding/xml"
+	"errors"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -160,6 +162,19 @@ func getMappingRules() map[string]string {
 	return nil
 }
 
+func validateRemoteHost(remoteHost string) error {
+	if remoteHost == "" {
+		return errors.New("unable to connect: REMOTE_HOST environment variable is not set")
+	}
+
+	sshArgs := []string{"-o", "BatchMode=yes", "-o", "ConnectTimeout=5", remoteHost, "true"}
+	if err := exec.Command("ssh", sshArgs...).Run(); err != nil {
+		return fmt.Errorf("SSH connection test failed: %w", err)
+	}
+
+	return nil
+}
+
 func runWatcher() {
 	mappingRules := getMappingRules()
 
@@ -201,8 +216,8 @@ func init() {
 	currentWorkPath, _ = os.Getwd()
 
 	remoteHost = os.Getenv("REMOTE_HOST")
-	if remoteHost == "" {
-		log.Fatal("REMOTE_HOST is not set")
+	if err := validateRemoteHost(remoteHost); err != nil {
+		log.Fatal(err)
 	}
 
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
