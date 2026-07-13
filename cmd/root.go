@@ -18,6 +18,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Version information
+var Version string
+
 var pleskMappingRules = map[string]string{
 	"common/php/plib":    "/usr/local/psa/admin/plib",
 	"common/php/htdocs":  "/usr/local/psa/admin/htdocs",
@@ -35,11 +38,17 @@ var currentWorkPath = ""
 var remoteHost = ""
 
 var rootCmd = &cobra.Command{
-	Use:   "psync",
-	Short: "An utility to sync source code with remote machine",
+	Use:          "psync",
+	Short:        "An utility to sync source code with remote machine",
+	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		runWatcher()
-		return nil
+		currentWorkPath, _ = os.Getwd()
+		remoteHost = os.Getenv("REMOTE_HOST")
+		if err := validateRemoteHost(remoteHost); err != nil {
+			return err
+		}
+
+		return runWatcher()
 	},
 }
 
@@ -191,10 +200,10 @@ func validateProductPresence(mappingRules map[string]string) error {
 	return nil
 }
 
-func runWatcher() {
+func runWatcher() error {
 	mappingRules := getMappingRules()
 	if err := validateProductPresence(mappingRules); err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	dev, _ := fsevents.DeviceForPath(".")
@@ -224,24 +233,15 @@ func runWatcher() {
 			}
 		}
 	}
-}
 
-func init() {
-	currentWorkPath, _ = os.Getwd()
-
-	remoteHost = os.Getenv("REMOTE_HOST")
-	if err := validateRemoteHost(remoteHost); err != nil {
-		log.Fatal(err)
-	}
-
-	rootCmd.CompletionOptions.DisableDefaultCmd = true
-
-	rootCmd.AddCommand(
-		versionCmd,
-	)
+	return nil
 }
 
 func Execute() {
+	rootCmd.Version = Version
+	rootCmd.CompletionOptions.DisableDefaultCmd = true
+	rootCmd.Flags().BoolP("version", "v", false, "Print version information")
+
 	err := rootCmd.Execute()
 	if err != nil {
 		os.Exit(1)
