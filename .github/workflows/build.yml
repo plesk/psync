@@ -12,6 +12,9 @@ on:
       - 'go.mod'
       - '.github/workflows/build.yml'
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: macos-latest
