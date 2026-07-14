@@ -79,11 +79,11 @@ func uploadFile(eventPath string, sourcePath string, targetPath string) {
 	cmd := exec.Command("scp", "-r", eventPath, remoteHost+":"+targetFullPath)
 	err := cmd.Run()
 	if err != nil {
-		log.Printf("File upload error: %s", err)
+		log.Printf("file upload error: %s", err)
 	}
 
 	s.Stop()
-	log.Printf("Updated %s:%s", remoteHost, targetFullPath)
+	log.Printf("updated %s:%s", remoteHost, targetFullPath)
 }
 
 func fileExists(name string) bool {
@@ -258,7 +258,7 @@ func runWatcher() error {
 	_ = es.Start()
 	defer es.Stop()
 
-	log.Printf("Watcher is ready...")
+	log.Printf("watcher is ready...")
 
 	debounce := newDebouncer(300 * time.Millisecond)
 

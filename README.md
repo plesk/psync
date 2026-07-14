@@ -27,7 +27,7 @@ The output can be like the following:
 
 ```
 2026/07/12 22:12:27 Plesk detected
-2026/07/12 22:12:27 Watcher is ready...
+2026/07/12 22:12:27 watcher is ready...
 ```
 
 The utility will watch the specified directory and will send the changed files to the specified remote host.
