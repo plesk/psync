@@ -42,8 +42,7 @@ var rootCmd = &cobra.Command{
 	Short:        "An utility to sync source code with remote machine",
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		currentWorkPath, _ = os.Getwd()
-		remoteHost = os.Getenv("REMOTE_HOST")
+		remoteHost = getRemoteHost()
 		if err := validateRemoteHost(remoteHost); err != nil {
 			return err
 		}
@@ -173,7 +172,7 @@ func getMappingRules() map[string]string {
 
 func validateRemoteHost(remoteHost string) error {
 	if remoteHost == "" {
-		return errors.New("unable to connect: REMOTE_HOST environment variable is not set")
+		return errors.New("unable to connect: REMOTE_HOST is not set via environment variable or .env file")
 	}
 
 	sshArgs := []string{"-o", "BatchMode=yes", "-o", "ConnectTimeout=5", remoteHost, "true"}
@@ -198,6 +197,47 @@ func validateProductPresence(mappingRules map[string]string) error {
 	}
 
 	return nil
+}
+
+func getRemoteHost() string {
+	if host := os.Getenv("REMOTE_HOST"); host != "" {
+		return host
+	}
+
+	return getEnvFileValue(".env", "REMOTE_HOST")
+}
+
+func getEnvFileValue(envFile string, key string) string {
+	data, err := os.ReadFile(envFile)
+	if err != nil {
+		return ""
+	}
+
+	for line := range strings.Lines(string(data)) {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		name, value, found := strings.Cut(line, "=")
+		if !found {
+			continue
+		}
+
+		name = strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(name), "export "))
+		if name != key {
+			continue
+		}
+
+		value = strings.TrimSpace(value)
+		if len(value) >= 2 && (value[0] == '"' || value[0] == '\'') && value[len(value)-1] == value[0] {
+			value = value[1 : len(value)-1]
+		}
+
+		return value
+	}
+
+	return ""
 }
 
 func runWatcher() error {
@@ -235,6 +275,10 @@ func runWatcher() error {
 	}
 
 	return nil
+}
+
+func init() {
+	currentWorkPath, _ = os.Getwd()
 }
 
 func Execute() {

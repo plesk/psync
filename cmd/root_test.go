@@ -177,6 +177,79 @@ func TestGetMappingRulesPlesk(t *testing.T) {
 	}
 }
 
+func TestGetRemoteHostFromEnvVariable(t *testing.T) {
+	t.Chdir(t.TempDir())
+	t.Setenv("REMOTE_HOST", "root@env-host")
+
+	if err := os.WriteFile(".env", []byte("REMOTE_HOST=root@file-host\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := getRemoteHost(); got != "root@env-host" {
+		t.Errorf("getRemoteHost() = %q, expected environment variable to take precedence", got)
+	}
+}
+
+func TestGetRemoteHostFromEnvFile(t *testing.T) {
+	t.Chdir(t.TempDir())
+	t.Setenv("REMOTE_HOST", "")
+
+	if err := os.WriteFile(".env", []byte("REMOTE_HOST=root@file-host\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := getRemoteHost(); got != "root@file-host" {
+		t.Errorf("getRemoteHost() = %q, expected %q from .env file", got, "root@file-host")
+	}
+}
+
+func TestGetRemoteHostMissingEverywhere(t *testing.T) {
+	t.Chdir(t.TempDir())
+	t.Setenv("REMOTE_HOST", "")
+
+	if got := getRemoteHost(); got != "" {
+		t.Errorf("getRemoteHost() = %q, expected empty string", got)
+	}
+}
+
+func TestGetEnvFileValue(t *testing.T) {
+	tests := []struct {
+		name     string
+		content  string
+		expected string
+	}{
+		{"simple value", "REMOTE_HOST=root@plesk\n", "root@plesk"},
+		{"double quoted value", `REMOTE_HOST="root@plesk"`, "root@plesk"},
+		{"single quoted value", `REMOTE_HOST='root@plesk'`, "root@plesk"},
+		{"export prefix", "export REMOTE_HOST=root@plesk\n", "root@plesk"},
+		{"surrounding whitespace", "  REMOTE_HOST = root@plesk  \n", "root@plesk"},
+		{"among other variables", "FOO=bar\nREMOTE_HOST=root@plesk\nBAZ=qux\n", "root@plesk"},
+		{"commented out", "# REMOTE_HOST=root@plesk\n", ""},
+		{"key not present", "FOO=bar\n", ""},
+		{"line without equals sign", "REMOTE_HOST\n", ""},
+		{"empty file", "", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			envFile := filepath.Join(t.TempDir(), ".env")
+			if err := os.WriteFile(envFile, []byte(tt.content), 0644); err != nil {
+				t.Fatal(err)
+			}
+
+			if got := getEnvFileValue(envFile, "REMOTE_HOST"); got != tt.expected {
+				t.Errorf("getEnvFileValue() = %q, expected %q", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestGetEnvFileValueMissingFile(t *testing.T) {
+	if got := getEnvFileValue(filepath.Join(t.TempDir(), ".env"), "REMOTE_HOST"); got != "" {
+		t.Errorf("getEnvFileValue() = %q for a missing file, expected empty string", got)
+	}
+}
+
 func TestValidateRemoteHostEmpty(t *testing.T) {
 	err := validateRemoteHost("")
 	if err == nil {
