@@ -258,6 +258,8 @@ func runWatcher() error {
 
 	log.Printf("Watcher is ready...")
 
+	debounce := newDebouncer(300 * time.Millisecond)
+
 	for msg := range es.Events {
 		for _, e := range msg {
 			eventPath := trimPath(e.Path)
@@ -268,7 +270,9 @@ func runWatcher() error {
 				}
 
 				if e.Flags&fsevents.ItemModified != 0 || e.Flags&fsevents.ItemInodeMetaMod != 0 {
-					uploadFile(eventPath, sourcePath, targetPath)
+					debounce.trigger(eventPath, func() {
+						uploadFile(eventPath, sourcePath, targetPath)
+					})
 				}
 			}
 		}
