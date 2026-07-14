@@ -1,5 +1,8 @@
 # psync
 
+[![build](https://github.com/plesk/psync/workflows/build/badge.svg)](https://github.com/plesk/psync/actions)
+[![codecov](https://codecov.io/gh/plesk/psync/graph/badge.svg?token=uqWks9veLc)](https://codecov.io/gh/plesk/psync)
+
 A CLI utility to automatic synchronization local source tree for Plesk or Plesk extension with remote machine.
 
 # Installation
