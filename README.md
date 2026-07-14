@@ -7,6 +7,11 @@ A CLI utility to automatic synchronization local source tree for Plesk or Plesk 
 
 # Installation
 
+Installation using Homebrew:
+```
+brew install plesk/psync/psync
+```
+
 If you have Go toolchain installed, you can use the following command to install `psync`:
 ```
 go install github.com/plesk/psync@latest
