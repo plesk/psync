@@ -41,7 +41,7 @@ var remoteHost = ""
 
 var rootCmd = &cobra.Command{
 	Use:          "psync",
-	Short:        "An utility to sync source code with remote machine",
+	Short:        "A utility to sync source code with a remote machine",
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		remoteHost = getRemoteHost()
