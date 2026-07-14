@@ -1,6 +1,7 @@
 project_name: psync
 builds:
   - env:
+      - CGO_ENABLED=1
     goos:
       - darwin
 checksum:
