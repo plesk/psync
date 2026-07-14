@@ -7,24 +7,20 @@ A CLI utility to automatic synchronization local source tree for Plesk or Plesk 
 
 # Installation
 
-Go toolchain is required to build and install the binary. Clone the repository and run the following commands:
-
+If you have Go toolchain installed, you can use the following command to install `psync`:
 ```
-go build
-go install
+go install github.com/plesk/psync@latest
 ```
 
 # Usage
 
 Basic usage:
-
 ```
 cd ~/projects/plesk/extensions/ext-log-browser
 REMOTE_HOST=10.66.1.1 psync
 ```
 
 The output can be like the following:
-
 ```
 2026/07/12 22:12:27 Plesk detected
 2026/07/12 22:12:27 watcher is ready...
