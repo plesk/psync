@@ -271,7 +271,9 @@ func runWatcher() error {
 					continue
 				}
 
-				if e.Flags&fsevents.ItemModified != 0 || e.Flags&fsevents.ItemInodeMetaMod != 0 {
+				const uploadFlags = fsevents.ItemModified | fsevents.ItemInodeMetaMod |
+					fsevents.ItemRenamed | fsevents.ItemCreated
+				if e.Flags&uploadFlags != 0 {
 					debounce.trigger(eventPath, func() {
 						uploadFile(eventPath, sourcePath, targetPath)
 					})
