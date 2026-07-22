@@ -33,6 +33,11 @@ The output can be like the following:
 
 The utility will watch the specified directory and will send the changed files to the specified remote host.
 
+To upload the files that are currently changed according to `git status` (without starting the watcher):
+```
+REMOTE_HOST=10.66.1.1 psync diff
+```
+
 # Limitations
 
 * Utility runs only on macOS.
