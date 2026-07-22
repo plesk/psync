@@ -19,6 +19,7 @@ func TestIsIgnored(t *testing.T) {
 		{"src/plib/.Utils.php.swp", true},
 		{"src/plib/.Utils.php.swx", true},
 		{"src/plib/library/cache.tmp", true},
+		{"src/plib/library/Agent.php.tmp.34722.634af", true},
 		{".DS_Store", true},
 		{"src/htdocs/.DS_Store", true},
 		{"Thumbs.db", true},

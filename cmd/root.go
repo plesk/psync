@@ -34,7 +34,7 @@ var pleskExtensionMappingRules = map[string]string{
 	"src/htdocs": "/usr/local/psa/admin/htdocs/modules",
 }
 
-var ignorePatterns = []string{"*~", ".*.sw?", "*.tmp", ".DS_Store", "Thumbs.db"}
+var ignorePatterns = []string{"*~", ".*.sw?", "*.tmp", "*.tmp.*", ".DS_Store", "Thumbs.db"}
 
 var currentWorkPath = ""
 var remoteHost = ""
