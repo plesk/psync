@@ -24,17 +24,22 @@ var diffCmd = &cobra.Command{
 	},
 }
 
-func getChangedFiles() ([]string, error) {
+type changeset struct {
+	uploads  []string
+	removals []string
+}
+
+func getChangedFiles() (changeset, error) {
 	out, err := exec.Command("git", "status", "--porcelain", "-z").Output()
 	if err != nil {
-		return nil, fmt.Errorf("git status failed: %w", err)
+		return changeset{}, fmt.Errorf("git status failed: %w", err)
 	}
 
 	return parseGitStatus(string(out)), nil
 }
 
-func parseGitStatus(out string) []string {
-	var files []string
+func parseGitStatus(out string) changeset {
+	var changes changeset
 
 	entries := strings.Split(out, "\x00")
 	for i := 0; i < len(entries); i++ {
@@ -46,15 +51,19 @@ func parseGitStatus(out string) []string {
 		status, file := entry[:2], entry[3:]
 		if status[0] == 'R' || status[0] == 'C' {
 			i++
+			if status[0] == 'R' && i < len(entries) {
+				changes.removals = append(changes.removals, entries[i])
+			}
 		}
 		if status[0] == 'D' || status[1] == 'D' {
+			changes.removals = append(changes.removals, file)
 			continue
 		}
 
-		files = append(files, file)
+		changes.uploads = append(changes.uploads, file)
 	}
 
-	return files
+	return changes
 }
 
 func runDiff() error {
@@ -63,12 +72,23 @@ func runDiff() error {
 		return err
 	}
 
-	files, err := getChangedFiles()
+	changes, err := getChangedFiles()
 	if err != nil {
 		return err
 	}
 
-	uploaded := 0
+	processed := processFiles(changes.uploads, mappingRules, uploadFile)
+	processed += processFiles(changes.removals, mappingRules, removeFile)
+
+	if processed == 0 {
+		log.Println("no changed files to upload")
+	}
+
+	return nil
+}
+
+func processFiles(files []string, mappingRules map[string]string, action func(file string, sourcePath string, targetPath string)) int {
+	processed := 0
 	for _, file := range files {
 		if isIgnored(file) {
 			continue
@@ -76,17 +96,13 @@ func runDiff() error {
 
 		for sourcePath, targetPath := range mappingRules {
 			if strings.HasPrefix(file, sourcePath+"/") {
-				uploadFile(file, sourcePath, targetPath)
-				uploaded++
+				action(file, sourcePath, targetPath)
+				processed++
 			}
 		}
 	}
 
-	if uploaded == 0 {
-		log.Println("no changed files to upload")
-	}
-
-	return nil
+	return processed
 }
 
 func init() {

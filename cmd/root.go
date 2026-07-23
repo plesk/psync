@@ -86,6 +86,21 @@ func uploadFile(eventPath string, sourcePath string, targetPath string) {
 	log.Printf("updated %s:%s", remoteHost, targetFullPath)
 }
 
+func removeFile(eventPath string, sourcePath string, targetPath string) {
+	s := spinner.New(spinner.CharSets[11], 100*time.Millisecond)
+	s.Start()
+
+	targetFullPath := filepath.Join(targetPath, strings.TrimPrefix(eventPath, sourcePath))
+	cmd := exec.Command("ssh", remoteHost, "rm", "-rf", fmt.Sprintf("%q", targetFullPath))
+	err := cmd.Run()
+	if err != nil {
+		log.Printf("file removal error: %s", err)
+	}
+
+	s.Stop()
+	log.Printf("removed %s:%s", remoteHost, targetFullPath)
+}
+
 func fileExists(name string) bool {
 	if _, err := os.Stat(name); err != nil {
 		if os.IsNotExist(err) {
@@ -271,11 +286,15 @@ func runWatcher() error {
 					continue
 				}
 
-				const uploadFlags = fsevents.ItemModified | fsevents.ItemInodeMetaMod |
-					fsevents.ItemRenamed | fsevents.ItemCreated
-				if e.Flags&uploadFlags != 0 {
+				const changeFlags = fsevents.ItemModified | fsevents.ItemInodeMetaMod |
+					fsevents.ItemRenamed | fsevents.ItemCreated | fsevents.ItemRemoved
+				if e.Flags&changeFlags != 0 {
 					debounce.trigger(eventPath, func() {
-						uploadFile(eventPath, sourcePath, targetPath)
+						if fileExists(eventPath) {
+							uploadFile(eventPath, sourcePath, targetPath)
+						} else {
+							removeFile(eventPath, sourcePath, targetPath)
+						}
 					})
 				}
 			}

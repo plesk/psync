@@ -31,12 +31,14 @@ The output can be like the following:
 2026/07/12 22:12:27 watcher is ready...
 ```
 
-The utility will watch the specified directory and will send the changed files to the specified remote host.
+The utility will watch the specified directory and will send the changed files to the specified remote host. Files deleted or renamed locally are removed from the remote host as well.
 
 To upload the files that are currently changed according to `git status` (without starting the watcher):
 ```
 REMOTE_HOST=10.66.1.1 psync diff
 ```
+
+Deleted files are removed from the remote host as well. For renamed files, the new path is uploaded and the old one is removed.
 
 # Limitations
 
