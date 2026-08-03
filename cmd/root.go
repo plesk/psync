@@ -71,12 +71,20 @@ func trimPath(targetPath string) string {
 	return targetPath
 }
 
+func upload(eventPath string, sourcePath string, targetPath string) {
+	if isDirectory(eventPath) {
+		uploadDirectory(eventPath, sourcePath, targetPath)
+	} else {
+		uploadFile(eventPath, sourcePath, targetPath)
+	}
+}
+
 func uploadFile(eventPath string, sourcePath string, targetPath string) {
 	s := spinner.New(spinner.CharSets[11], 100*time.Millisecond)
 	s.Start()
 
 	targetFullPath := filepath.Join(targetPath, strings.TrimPrefix(eventPath, sourcePath))
-	cmd := exec.Command("scp", "-r", eventPath, remoteHost+":"+targetFullPath)
+	cmd := exec.Command("scp", eventPath, remoteHost+":"+targetFullPath)
 	err := cmd.Run()
 	if err != nil {
 		log.Printf("file upload error: %s", err)
@@ -86,7 +94,24 @@ func uploadFile(eventPath string, sourcePath string, targetPath string) {
 	log.Printf("updated %s:%s", remoteHost, targetFullPath)
 }
 
-func removeFile(eventPath string, sourcePath string, targetPath string) {
+func uploadDirectory(eventPath string, sourcePath string, targetPath string) {
+	s := spinner.New(spinner.CharSets[11], 100*time.Millisecond)
+	s.Start()
+
+	targetFullPath := filepath.Join(targetPath, strings.TrimPrefix(eventPath, sourcePath))
+	err := exec.Command("ssh", remoteHost, "mkdir", "-p", fmt.Sprintf("%q", targetFullPath)).Run()
+	if err == nil {
+		err = exec.Command("scp", "-r", filepath.Clean(eventPath), remoteHost+":"+filepath.Dir(targetFullPath)).Run()
+	}
+	if err != nil {
+		log.Printf("directory upload error: %s", err)
+	}
+
+	s.Stop()
+	log.Printf("updated %s:%s", remoteHost, targetFullPath)
+}
+
+func removePath(eventPath string, sourcePath string, targetPath string) {
 	s := spinner.New(spinner.CharSets[11], 100*time.Millisecond)
 	s.Start()
 
@@ -94,11 +119,16 @@ func removeFile(eventPath string, sourcePath string, targetPath string) {
 	cmd := exec.Command("ssh", remoteHost, "rm", "-rf", fmt.Sprintf("%q", targetFullPath))
 	err := cmd.Run()
 	if err != nil {
-		log.Printf("file removal error: %s", err)
+		log.Printf("removal error: %s", err)
 	}
 
 	s.Stop()
 	log.Printf("removed %s:%s", remoteHost, targetFullPath)
+}
+
+func isDirectory(name string) bool {
+	info, err := os.Stat(name)
+	return err == nil && info.IsDir()
 }
 
 func fileExists(name string) bool {
@@ -291,9 +321,9 @@ func runWatcher() error {
 				if e.Flags&changeFlags != 0 {
 					debounce.trigger(eventPath, func() {
 						if fileExists(eventPath) {
-							uploadFile(eventPath, sourcePath, targetPath)
+							upload(eventPath, sourcePath, targetPath)
 						} else {
-							removeFile(eventPath, sourcePath, targetPath)
+							removePath(eventPath, sourcePath, targetPath)
 						}
 					})
 				}

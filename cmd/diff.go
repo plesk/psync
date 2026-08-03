@@ -77,8 +77,8 @@ func runDiff() error {
 		return err
 	}
 
-	processed := processFiles(changes.uploads, mappingRules, uploadFile)
-	processed += processFiles(changes.removals, mappingRules, removeFile)
+	processed := processFiles(changes.uploads, mappingRules, upload)
+	processed += processFiles(changes.removals, mappingRules, removePath)
 
 	if processed == 0 {
 		log.Println("no changed files to upload")

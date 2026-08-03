@@ -62,6 +62,23 @@ func TestTrimPath(t *testing.T) {
 	}
 }
 
+func TestIsDirectory(t *testing.T) {
+	dir := t.TempDir()
+
+	file := filepath.Join(dir, "file.txt")
+	if err := os.WriteFile(file, []byte("data"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if !isDirectory(dir) {
+		t.Errorf("isDirectory(%q) = false, expected true", dir)
+	}
+
+	if isDirectory(file) {
+		t.Errorf("isDirectory(%q) = true for a file, expected false", file)
+	}
+}
+
 func TestFileExists(t *testing.T) {
 	dir := t.TempDir()
 
