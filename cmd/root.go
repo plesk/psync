@@ -30,8 +30,9 @@ var pleskMappingRules = map[string]string{
 }
 
 var pleskExtensionMappingRules = map[string]string{
-	"src/plib":   "/usr/local/psa/admin/plib/modules",
-	"src/htdocs": "/usr/local/psa/admin/htdocs/modules",
+	"src/plib":   "/usr/local/psa/admin/plib/modules/<extension-id>",
+	"src/htdocs": "/usr/local/psa/admin/htdocs/modules/<extension-id>",
+	"src/_meta":  "/usr/local/psa/admin/share/modules/<extension-id>/_meta",
 }
 
 var ignorePatterns = []string{"*~", ".*.sw?", "*.tmp", "*.tmp.*", ".DS_Store", "Thumbs.db"}
@@ -206,12 +207,13 @@ func getMappingRules() map[string]string {
 			return nil
 		}
 
+		rules := make(map[string]string, len(pleskExtensionMappingRules))
 		for rule, value := range pleskExtensionMappingRules {
-			pleskExtensionMappingRules[rule] = filepath.Join(value, extensionName)
+			rules[rule] = strings.ReplaceAll(value, "<extension-id>", extensionName)
 		}
 
 		log.Printf("Plesk extension %s detected", extensionName)
-		return pleskExtensionMappingRules
+		return rules
 	}
 
 	return nil

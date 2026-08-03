@@ -197,6 +197,29 @@ func TestGetMappingRulesPlesk(t *testing.T) {
 	}
 }
 
+func TestGetMappingRulesExtension(t *testing.T) {
+	t.Chdir(t.TempDir())
+
+	if err := os.Mkdir("src", 0755); err != nil {
+		t.Fatal(err)
+	}
+	meta := `<?xml version="1.0"?><module><id>my-extension</id></module>`
+	if err := os.WriteFile(filepath.Join("src", "meta.xml"), []byte(meta), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	expected := map[string]string{
+		"src/plib":   "/usr/local/psa/admin/plib/modules/my-extension",
+		"src/htdocs": "/usr/local/psa/admin/htdocs/modules/my-extension",
+		"src/_meta":  "/usr/local/psa/admin/share/modules/my-extension/_meta",
+	}
+
+	rules := getMappingRules()
+	if !maps.Equal(rules, expected) {
+		t.Errorf("getMappingRules() = %v, expected %v", rules, expected)
+	}
+}
+
 func TestGetRemoteHostFromEnvVariable(t *testing.T) {
 	t.Chdir(t.TempDir())
 	t.Setenv("REMOTE_HOST", "root@env-host")
