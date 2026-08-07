@@ -32,6 +32,7 @@ var pleskMappingRules = map[string]string{
 var pleskExtensionMappingRules = map[string]string{
 	"src/plib":   "/usr/local/psa/admin/plib/modules/<extension-id>",
 	"src/htdocs": "/usr/local/psa/admin/htdocs/modules/<extension-id>",
+	"src/sbin":   "/usr/local/psa/admin/sbin/modules/<extension-id>",
 	"src/_meta":  "/usr/local/psa/admin/share/modules/<extension-id>/_meta",
 }
 

@@ -211,6 +211,7 @@ func TestGetMappingRulesExtension(t *testing.T) {
 	expected := map[string]string{
 		"src/plib":   "/usr/local/psa/admin/plib/modules/my-extension",
 		"src/htdocs": "/usr/local/psa/admin/htdocs/modules/my-extension",
+		"src/sbin":   "/usr/local/psa/admin/sbin/modules/my-extension",
 		"src/_meta":  "/usr/local/psa/admin/share/modules/my-extension/_meta",
 	}
 
