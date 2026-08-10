@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/briandowns/spinner"
+	"github.com/fatih/color"
 	"github.com/fsnotify/fsevents"
 	"github.com/spf13/cobra"
 )
@@ -89,11 +90,11 @@ func uploadFile(eventPath string, sourcePath string, targetPath string) {
 	cmd := exec.Command("scp", eventPath, remoteHost+":"+targetFullPath)
 	err := cmd.Run()
 	if err != nil {
-		log.Printf("file upload error: %s", err)
+		log.Print(color.RedString("file upload error: %s", err))
 	}
 
 	s.Stop()
-	log.Printf("updated %s:%s", remoteHost, targetFullPath)
+	log.Printf("updated %s", color.GreenString("%s:%s", remoteHost, targetFullPath))
 }
 
 func uploadDirectory(eventPath string, sourcePath string, targetPath string) {
@@ -106,11 +107,11 @@ func uploadDirectory(eventPath string, sourcePath string, targetPath string) {
 		err = exec.Command("scp", "-r", filepath.Clean(eventPath), remoteHost+":"+filepath.Dir(targetFullPath)).Run()
 	}
 	if err != nil {
-		log.Printf("directory upload error: %s", err)
+		log.Print(color.RedString("directory upload error: %s", err))
 	}
 
 	s.Stop()
-	log.Printf("updated %s:%s", remoteHost, targetFullPath)
+	log.Printf("updated %s", color.GreenString("%s:%s", remoteHost, targetFullPath))
 }
 
 func removePath(eventPath string, sourcePath string, targetPath string) {
@@ -121,11 +122,11 @@ func removePath(eventPath string, sourcePath string, targetPath string) {
 	cmd := exec.Command("ssh", remoteHost, "rm", "-rf", fmt.Sprintf("%q", targetFullPath))
 	err := cmd.Run()
 	if err != nil {
-		log.Printf("removal error: %s", err)
+		log.Print(color.RedString("removal error: %s", err))
 	}
 
 	s.Stop()
-	log.Printf("removed %s:%s", remoteHost, targetFullPath)
+	log.Printf("removed %s", color.YellowString("%s:%s", remoteHost, targetFullPath))
 }
 
 func isDirectory(name string) bool {
@@ -196,7 +197,7 @@ func getPleskExtensionName(extensionMetaFile string) string {
 
 func getMappingRules() map[string]string {
 	if isPleskComposer() {
-		log.Println("Plesk detected")
+		log.Print(color.CyanString("Plesk detected"))
 		return pleskMappingRules
 	}
 
@@ -213,7 +214,10 @@ func getMappingRules() map[string]string {
 			rules[rule] = strings.ReplaceAll(value, "<extension-id>", extensionName)
 		}
 
-		log.Printf("Plesk extension %s detected", extensionName)
+		log.Printf("%s %s %s",
+			color.CyanString("Plesk extension"),
+			color.New(color.FgHiCyan, color.Bold).Sprint(extensionName),
+			color.CyanString("detected"))
 		return rules
 	}
 
@@ -306,7 +310,7 @@ func runWatcher() error {
 	_ = es.Start()
 	defer es.Stop()
 
-	log.Printf("watcher is ready...")
+	log.Print(color.New(color.FgGreen, color.Bold).Sprint("watcher is ready..."))
 
 	debounce := newDebouncer(300 * time.Millisecond)
 
