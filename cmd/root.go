@@ -35,6 +35,7 @@ var pleskExtensionMappingRules = map[string]string{
 	"src/htdocs": "/usr/local/psa/admin/htdocs/modules/<extension-id>",
 	"src/sbin":   "/usr/local/psa/admin/sbin/modules/<extension-id>",
 	"src/_meta":  "/usr/local/psa/admin/share/modules/<extension-id>/_meta",
+	"_meta":      "/usr/local/psa/admin/share/modules/<extension-id>/_meta",
 }
 
 var ignorePatterns = []string{"*~", ".*.sw?", "*.tmp", "*.tmp.*", ".DS_Store", "Thumbs.db"}
@@ -202,6 +203,9 @@ func getMappingRules() map[string]string {
 	}
 
 	extensionMetaFile := filepath.Join("src", "meta.xml")
+	if !fileExists(extensionMetaFile) {
+		extensionMetaFile = "meta.xml"
+	}
 
 	if fileExists(extensionMetaFile) {
 		extensionName := getPleskExtensionName(extensionMetaFile)

@@ -213,11 +213,31 @@ func TestGetMappingRulesExtension(t *testing.T) {
 		"src/htdocs": "/usr/local/psa/admin/htdocs/modules/my-extension",
 		"src/sbin":   "/usr/local/psa/admin/sbin/modules/my-extension",
 		"src/_meta":  "/usr/local/psa/admin/share/modules/my-extension/_meta",
+		"_meta":      "/usr/local/psa/admin/share/modules/my-extension/_meta",
 	}
 
 	rules := getMappingRules()
 	if !maps.Equal(rules, expected) {
 		t.Errorf("getMappingRules() = %v, expected %v", rules, expected)
+	}
+}
+
+func TestGetMappingRulesExtensionWithRootMetaFile(t *testing.T) {
+	t.Chdir(t.TempDir())
+
+	meta := `<?xml version="1.0"?><module><id>my-extension</id></module>`
+	if err := os.WriteFile("meta.xml", []byte(meta), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	rules := getMappingRules()
+	if rules == nil {
+		t.Fatal("getMappingRules() = nil, expected extension mapping rules for a root meta.xml")
+	}
+
+	expected := "/usr/local/psa/admin/share/modules/my-extension/_meta"
+	if rules["_meta"] != expected {
+		t.Errorf("getMappingRules()[\"_meta\"] = %q, expected %q", rules["_meta"], expected)
 	}
 }
 
