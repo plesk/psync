@@ -21,14 +21,17 @@ go install github.com/plesk/psync@latest
 
 Basic usage:
 ```
-cd ~/projects/plesk/extensions/ext-log-browser
+cd ~/projects/plesk/extensions/ext-broadcast-message
 REMOTE_HOST=10.66.1.1 psync
 ```
 
 The output can be like the following:
 ```
-2026/07/12 22:12:27 Plesk detected
-2026/07/12 22:12:27 watcher is ready...
+2026/08/12 11:02:26 Plesk extension broadcast-message detected
+2026/08/12 11:02:26 watcher is ready...
+...
+2026/08/12 11:07:52 updated 10.66.95.33:/usr/local/psa/admin/plib/modules/broadcast-message/hooks/ContentInclude.php
+...
 ```
 
 The utility will watch the specified directory and will send the changed files to the specified remote host. Files deleted or renamed locally are removed from the remote host as well.
@@ -39,6 +42,8 @@ REMOTE_HOST=10.66.1.1 psync diff
 ```
 
 Deleted files are removed from the remote host as well. For renamed files, the new path is uploaded and the old one is removed.
+
+REMOTE_HOST variable can be stored in `.env` file.
 
 # Limitations
 
