@@ -36,6 +36,11 @@ The output can be like the following:
 
 The utility will watch the specified directory and will send the changed files to the specified remote host. Files deleted or renamed locally are removed from the remote host as well.
 
+By default, the current directory is monitored. Use the `-c` (`--chdir`) flag to monitor another directory without changing into it:
+```
+REMOTE_HOST=10.66.1.1 psync -c ~/projects/plesk/extensions/ext-broadcast-message
+```
+
 To upload the files that are currently changed according to `git status` (without starting the watcher):
 ```
 REMOTE_HOST=10.66.1.1 psync diff

@@ -42,12 +42,17 @@ var ignorePatterns = []string{"*~", ".*.sw?", "*.tmp", "*.tmp.*", ".DS_Store", "
 
 var currentWorkPath = ""
 var remoteHost = ""
+var workDirFlag = ""
 
 var rootCmd = &cobra.Command{
 	Use:          "psync",
 	Short:        "A utility to sync source code with a remote machine",
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := changeWorkDir(workDirFlag); err != nil {
+			return err
+		}
+
 		remoteHost = getRemoteHost()
 		if err := validateRemoteHost(remoteHost); err != nil {
 			return err
@@ -257,6 +262,19 @@ func validateProductPresence(mappingRules map[string]string) error {
 	return nil
 }
 
+func changeWorkDir(dir string) error {
+	if dir == "" {
+		return nil
+	}
+
+	if err := os.Chdir(dir); err != nil {
+		return fmt.Errorf("unable to change the monitoring directory: %w", err)
+	}
+
+	currentWorkPath, _ = os.Getwd()
+	return nil
+}
+
 func getRemoteHost() string {
 	if host := os.Getenv("REMOTE_HOST"); host != "" {
 		return host
@@ -353,6 +371,7 @@ func Execute() {
 	rootCmd.Version = Version
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 	rootCmd.Flags().BoolP("version", "v", false, "Print version information")
+	rootCmd.Flags().StringVarP(&workDirFlag, "chdir", "c", "", "Directory to monitor (defaults to the current one)")
 
 	err := rootCmd.Execute()
 	if err != nil {

@@ -314,6 +314,38 @@ func TestGetEnvFileValueMissingFile(t *testing.T) {
 	}
 }
 
+func TestChangeWorkDir(t *testing.T) {
+	t.Chdir(t.TempDir())
+
+	origWorkPath := currentWorkPath
+	defer func() { currentWorkPath = origWorkPath }()
+
+	if err := changeWorkDir(""); err != nil {
+		t.Errorf("changeWorkDir(\"\") = %v, expected nil", err)
+	}
+	if currentWorkPath != origWorkPath {
+		t.Errorf("changeWorkDir(\"\") changed currentWorkPath to %q, expected it untouched", currentWorkPath)
+	}
+
+	target := t.TempDir()
+	if err := changeWorkDir(target); err != nil {
+		t.Fatalf("changeWorkDir(%q) = %v, expected nil", target, err)
+	}
+
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if currentWorkPath != wd {
+		t.Errorf("currentWorkPath = %q, expected the new working directory %q", currentWorkPath, wd)
+	}
+
+	missing := filepath.Join(target, "missing")
+	if err := changeWorkDir(missing); err == nil {
+		t.Errorf("changeWorkDir(%q) = nil for a missing directory, expected an error", missing)
+	}
+}
+
 func TestValidateRemoteHostEmpty(t *testing.T) {
 	err := validateRemoteHost("")
 	if err == nil {
