@@ -238,9 +238,14 @@ func validateRemoteHost(remoteHost string) error {
 		return errors.New("unable to connect: REMOTE_HOST is not set via environment variable or .env file")
 	}
 
+	if strings.ContainsAny(remoteHost, " \t") {
+		return fmt.Errorf("invalid remote host %q: it must not contain spaces", remoteHost)
+	}
+
 	sshArgs := []string{"-o", "BatchMode=yes", "-o", "ConnectTimeout=5", remoteHost, "true"}
 	if err := exec.Command("ssh", sshArgs...).Run(); err != nil {
-		return fmt.Errorf("SSH connection test failed: %w", err)
+		return fmt.Errorf("unable to connect to %s non-interactively: %w; "+
+			"set up SSH key-based authentication (e.g. ssh-copy-id %s)", remoteHost, err, remoteHost)
 	}
 
 	return nil

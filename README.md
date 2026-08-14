@@ -3,7 +3,7 @@
 [![build](https://github.com/plesk/psync/workflows/build/badge.svg)](https://github.com/plesk/psync/actions)
 [![codecov](https://codecov.io/gh/plesk/psync/graph/badge.svg?token=uqWks9veLc)](https://codecov.io/gh/plesk/psync)
 
-A CLI utility to automatic synchronization local source tree for Plesk or Plesk extension with remote machine.
+A CLI utility that automatically synchronizes a local source tree of Plesk or a Plesk extension with a remote machine.
 
 # Installation
 
@@ -12,10 +12,21 @@ Installation using Homebrew:
 brew install plesk/psync/psync
 ```
 
-If you have Go toolchain installed, you can use the following command to install `psync`:
+If you have the Go toolchain installed, you can use the following command to install `psync`:
 ```
 go install github.com/plesk/psync@latest
 ```
+
+# Prerequisites
+
+The utility uploads files over `ssh`/`scp` in non-interactive mode, so it cannot ask for a password. Access to the remote host must be configured with SSH keys:
+
+```
+ssh-keygen -t ed25519 # if you do not have a key yet
+ssh-copy-id root@10.66.1.1
+```
+
+On startup, `psync` verifies that the remote host is reachable without a password prompt and exits with an error if SSH key-based authentication is not set up.
 
 # Usage
 
@@ -25,7 +36,7 @@ cd ~/projects/plesk/extensions/ext-broadcast-message
 REMOTE_HOST=10.66.1.1 psync
 ```
 
-The output can be like the following:
+The output looks like the following:
 ```
 2026/08/12 11:02:26 Plesk extension broadcast-message detected
 2026/08/12 11:02:26 watcher is ready...
@@ -34,7 +45,7 @@ The output can be like the following:
 ...
 ```
 
-The utility will watch the specified directory and will send the changed files to the specified remote host. Files deleted or renamed locally are removed from the remote host as well.
+The utility watches the specified directory and sends the changed files to the specified remote host. Files deleted or renamed locally are removed from the remote host as well.
 
 By default, the current directory is monitored. Use the `-c` (`--chdir`) flag to monitor another directory without changing into it:
 ```
@@ -48,9 +59,9 @@ REMOTE_HOST=10.66.1.1 psync diff
 
 Deleted files are removed from the remote host as well. For renamed files, the new path is uploaded and the old one is removed.
 
-REMOTE_HOST variable can be stored in `.env` file.
+The `REMOTE_HOST` variable can also be stored in a `.env` file in the monitored directory. The value must not contain spaces; use a `user@host` form (for example, `REMOTE_HOST=root@10.66.1.1`) or a host alias from your SSH config.
 
 # Limitations
 
-* Utility runs only on macOS.
-* Allowed remote destination platform is Linux only.
+* The utility runs only on macOS.
+* The only supported remote platform is Linux.

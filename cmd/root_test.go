@@ -6,6 +6,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -350,6 +351,36 @@ func TestValidateRemoteHostEmpty(t *testing.T) {
 	err := validateRemoteHost("")
 	if err == nil {
 		t.Fatal("validateRemoteHost(\"\") = nil, expected an error")
+	}
+}
+
+func TestValidateRemoteHostWithSpaces(t *testing.T) {
+	tests := []string{
+		"root@host extra",
+		" root@host",
+		"root@host ",
+		"root@host\textra",
+	}
+
+	for _, host := range tests {
+		err := validateRemoteHost(host)
+		if err == nil {
+			t.Errorf("validateRemoteHost(%q) = nil, expected an error", host)
+			continue
+		}
+		if !strings.Contains(err.Error(), "must not contain spaces") {
+			t.Errorf("validateRemoteHost(%q) = %v, expected a message about spaces", host, err)
+		}
+	}
+}
+
+func TestValidateRemoteHostUnreachable(t *testing.T) {
+	err := validateRemoteHost("root@psync-nonexistent-host.invalid")
+	if err == nil {
+		t.Fatal("validateRemoteHost() = nil for an unreachable host, expected an error")
+	}
+	if !strings.Contains(err.Error(), "SSH key-based authentication") {
+		t.Errorf("validateRemoteHost() = %v, expected a hint about SSH key-based authentication", err)
 	}
 }
 
