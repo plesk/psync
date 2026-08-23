@@ -93,13 +93,13 @@ func uploadFile(eventPath string, sourcePath string, targetPath string) {
 	s.Start()
 
 	targetFullPath := filepath.Join(targetPath, strings.TrimPrefix(eventPath, sourcePath))
-	cmd := exec.Command("scp", eventPath, remoteHost+":"+targetFullPath)
-	err := cmd.Run()
-	if err != nil {
-		log.Print(color.RedString("file upload error: %s", err))
-	}
+	out, err := exec.Command("scp", eventPath, remoteHost+":"+targetFullPath).CombinedOutput()
 
 	s.Stop()
+	if err != nil {
+		log.Print(color.RedString("file upload error: %s%s", err, formatCommandOutput(out)))
+		return
+	}
 	log.Printf("updated %s", color.GreenString("%s:%s", remoteHost, targetFullPath))
 }
 
@@ -108,15 +108,17 @@ func uploadDirectory(eventPath string, sourcePath string, targetPath string) {
 	s.Start()
 
 	targetFullPath := filepath.Join(targetPath, strings.TrimPrefix(eventPath, sourcePath))
-	err := exec.Command("ssh", remoteHost, "mkdir", "-p", fmt.Sprintf("%q", targetFullPath)).Run()
+	out, err := exec.Command("ssh", remoteHost, "mkdir", "-p", fmt.Sprintf("%q", targetFullPath)).CombinedOutput()
 	if err == nil {
-		err = exec.Command("scp", "-r", filepath.Clean(eventPath), remoteHost+":"+filepath.Dir(targetFullPath)).Run()
-	}
-	if err != nil {
-		log.Print(color.RedString("directory upload error: %s", err))
+		scpTarget := remoteHost + ":" + filepath.Dir(targetFullPath)
+		out, err = exec.Command("scp", "-r", filepath.Clean(eventPath), scpTarget).CombinedOutput()
 	}
 
 	s.Stop()
+	if err != nil {
+		log.Print(color.RedString("directory upload error: %s%s", err, formatCommandOutput(out)))
+		return
+	}
 	log.Printf("updated %s", color.GreenString("%s:%s", remoteHost, targetFullPath))
 }
 
@@ -125,14 +127,22 @@ func removePath(eventPath string, sourcePath string, targetPath string) {
 	s.Start()
 
 	targetFullPath := filepath.Join(targetPath, strings.TrimPrefix(eventPath, sourcePath))
-	cmd := exec.Command("ssh", remoteHost, "rm", "-rf", fmt.Sprintf("%q", targetFullPath))
-	err := cmd.Run()
-	if err != nil {
-		log.Print(color.RedString("removal error: %s", err))
-	}
+	out, err := exec.Command("ssh", remoteHost, "rm", "-rf", fmt.Sprintf("%q", targetFullPath)).CombinedOutput()
 
 	s.Stop()
+	if err != nil {
+		log.Print(color.RedString("removal error: %s%s", err, formatCommandOutput(out)))
+		return
+	}
 	log.Printf("removed %s", color.YellowString("%s:%s", remoteHost, targetFullPath))
+}
+
+func formatCommandOutput(out []byte) string {
+	trimmed := strings.TrimSpace(string(out))
+	if trimmed == "" {
+		return ""
+	}
+	return ": " + trimmed
 }
 
 func isDirectory(name string) bool {
