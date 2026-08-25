@@ -15,6 +15,10 @@ var diffCmd = &cobra.Command{
 	Use:   "diff",
 	Short: "Upload files changed according to git status and exit",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := changeWorkDir(workDirFlag); err != nil {
+			return err
+		}
+
 		remoteHost = getRemoteHost()
 		if err := validateRemoteHost(remoteHost); err != nil {
 			return err
@@ -95,7 +99,7 @@ func processFiles(files []string, mappingRules map[string]string, action func(fi
 		}
 
 		for sourcePath, targetPath := range mappingRules {
-			if strings.HasPrefix(file, sourcePath+"/") {
+			if sourcePath == "" || strings.HasPrefix(file, sourcePath+"/") {
 				action(file, sourcePath, targetPath)
 				processed++
 			}

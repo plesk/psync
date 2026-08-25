@@ -52,6 +52,11 @@ By default, the current directory is monitored. Use the `-c` (`--chdir`) flag to
 REMOTE_HOST=10.66.1.1 psync -c ~/projects/plesk/extensions/ext-broadcast-message
 ```
 
+For a generic worktree without Plesk-specific directory mappings, use `-d` (`--destination`) to sync the entire monitored directory to a remote directory:
+```
+REMOTE_HOST=10.66.1.1 psync -d /var/www/html
+```
+
 To upload the files that are currently changed according to `git status` (without starting the watcher):
 ```
 REMOTE_HOST=10.66.1.1 psync diff

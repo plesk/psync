@@ -43,6 +43,7 @@ var ignorePatterns = []string{"*~", ".*.sw?", "*.tmp", "*.tmp.*", ".DS_Store", "
 var currentWorkPath = ""
 var remoteHost = ""
 var workDirFlag = ""
+var destinationFlag = ""
 
 var rootCmd = &cobra.Command{
 	Use:          "psync",
@@ -212,6 +213,10 @@ func getPleskExtensionName(extensionMetaFile string) string {
 }
 
 func getMappingRules() map[string]string {
+	if destinationFlag != "" {
+		return map[string]string{"": destinationFlag}
+	}
+
 	if isPleskComposer() {
 		log.Print(color.CyanString("Plesk detected"))
 		return pleskMappingRules
@@ -387,6 +392,7 @@ func Execute() {
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 	rootCmd.Flags().BoolP("version", "v", false, "Print version information")
 	rootCmd.Flags().StringVarP(&workDirFlag, "chdir", "c", "", "Directory to monitor (defaults to the current one)")
+	rootCmd.Flags().StringVarP(&destinationFlag, "destination", "d", "", "Remote directory to sync the current one to")
 
 	err := rootCmd.Execute()
 	if err != nil {

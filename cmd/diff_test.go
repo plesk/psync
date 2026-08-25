@@ -7,6 +7,25 @@ import (
 	"testing"
 )
 
+func TestProcessFilesGenericMapping(t *testing.T) {
+	var processed []string
+	count := processFiles(
+		[]string{"composer.json", "src/lib/file.php"},
+		map[string]string{"": "/var/www/html"},
+		func(file string, sourcePath string, targetPath string) {
+			processed = append(processed, file+" -> "+targetPath)
+		},
+	)
+
+	expected := []string{
+		"composer.json -> /var/www/html",
+		"src/lib/file.php -> /var/www/html",
+	}
+	if count != len(expected) || !slices.Equal(processed, expected) {
+		t.Errorf("processFiles() = (%d, %v), expected (%d, %v)", count, processed, len(expected), expected)
+	}
+}
+
 func TestParseGitStatus(t *testing.T) {
 	tests := []struct {
 		name     string

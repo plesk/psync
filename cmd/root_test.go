@@ -198,6 +198,20 @@ func TestGetMappingRulesPlesk(t *testing.T) {
 	}
 }
 
+func TestGetMappingRulesDestination(t *testing.T) {
+	t.Chdir(t.TempDir())
+
+	origDestination := destinationFlag
+	defer func() { destinationFlag = origDestination }()
+	destinationFlag = "/var/www/html"
+
+	rules := getMappingRules()
+	expected := map[string]string{"": "/var/www/html"}
+	if !maps.Equal(rules, expected) {
+		t.Errorf("getMappingRules() = %v, expected generic mapping rules %v", rules, expected)
+	}
+}
+
 func TestGetMappingRulesExtension(t *testing.T) {
 	t.Chdir(t.TempDir())
 
