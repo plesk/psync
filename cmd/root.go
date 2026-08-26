@@ -64,6 +64,12 @@ var rootCmd = &cobra.Command{
 }
 
 func isIgnored(eventPath string) bool {
+	for _, part := range strings.Split(filepath.ToSlash(eventPath), "/") {
+		if len(part) > 1 && part[0] == '.' && part != ".." {
+			return true
+		}
+	}
+
 	fileName := filepath.Base(eventPath)
 
 	for _, pattern := range ignorePatterns {

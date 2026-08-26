@@ -27,6 +27,12 @@ func TestIsIgnored(t *testing.T) {
 		{"src/htdocs/images/Thumbs.db", true},
 		{"composer.json", false},
 		{"src/plib/tmp.php", false},
+		{".git/index", true},
+		{".idea/workspace.xml", true},
+		{"src/plib/.hidden/file.php", true},
+		{".env", true},
+		{"./src/plib/library/Utils.php", false},
+		{"src/plib/../plib/library/Utils.php", false},
 	}
 
 	for _, tt := range tests {
