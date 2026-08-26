@@ -100,7 +100,7 @@ func uploadFile(eventPath string, sourcePath string, targetPath string) {
 	s.Start()
 
 	targetFullPath := filepath.Join(targetPath, strings.TrimPrefix(eventPath, sourcePath))
-	out, err := exec.Command("scp", eventPath, remoteHost+":"+targetFullPath).CombinedOutput()
+	out, err := sshCommand("scp", eventPath, remoteHost+":"+targetFullPath).CombinedOutput()
 
 	s.Stop()
 	if err != nil {
@@ -115,10 +115,10 @@ func uploadDirectory(eventPath string, sourcePath string, targetPath string) {
 	s.Start()
 
 	targetFullPath := filepath.Join(targetPath, strings.TrimPrefix(eventPath, sourcePath))
-	out, err := exec.Command("ssh", remoteHost, "mkdir", "-p", fmt.Sprintf("%q", targetFullPath)).CombinedOutput()
+	out, err := sshCommand("ssh", remoteHost, "mkdir", "-p", fmt.Sprintf("%q", targetFullPath)).CombinedOutput()
 	if err == nil {
 		scpTarget := remoteHost + ":" + filepath.Dir(targetFullPath)
-		out, err = exec.Command("scp", "-r", filepath.Clean(eventPath), scpTarget).CombinedOutput()
+		out, err = sshCommand("scp", "-r", filepath.Clean(eventPath), scpTarget).CombinedOutput()
 	}
 
 	s.Stop()
@@ -134,7 +134,7 @@ func removePath(eventPath string, sourcePath string, targetPath string) {
 	s.Start()
 
 	targetFullPath := filepath.Join(targetPath, strings.TrimPrefix(eventPath, sourcePath))
-	out, err := exec.Command("ssh", remoteHost, "rm", "-rf", fmt.Sprintf("%q", targetFullPath)).CombinedOutput()
+	out, err := sshCommand("ssh", remoteHost, "rm", "-rf", fmt.Sprintf("%q", targetFullPath)).CombinedOutput()
 
 	s.Stop()
 	if err != nil {
@@ -142,6 +142,20 @@ func removePath(eventPath string, sourcePath string, targetPath string) {
 		return
 	}
 	log.Printf("removed %s", color.YellowString("%s:%s", remoteHost, targetFullPath))
+}
+
+func sshCommand(name string, args ...string) *exec.Cmd {
+	controlDir := "/tmp"
+	if home, err := os.UserHomeDir(); err == nil {
+		controlDir = filepath.Join(home, ".ssh")
+	}
+	controlPath := filepath.Join(controlDir, "psync-%C")
+	muxArgs := []string{
+		"-o", "ControlMaster=auto",
+		"-o", "ControlPath=" + controlPath,
+		"-o", "ControlPersist=60",
+	}
+	return exec.Command(name, append(muxArgs, args...)...)
 }
 
 func formatCommandOutput(out []byte) string {
@@ -264,7 +278,7 @@ func validateRemoteHost(remoteHost string) error {
 	}
 
 	sshArgs := []string{"-o", "BatchMode=yes", "-o", "ConnectTimeout=5", remoteHost, "true"}
-	if err := exec.Command("ssh", sshArgs...).Run(); err != nil {
+	if err := sshCommand("ssh", sshArgs...).Run(); err != nil {
 		return fmt.Errorf("unable to connect to %s non-interactively: %w; "+
 			"set up SSH key-based authentication (e.g. ssh-copy-id %s)", remoteHost, err, remoteHost)
 	}
@@ -279,7 +293,7 @@ func validateProductPresence(mappingRules map[string]string) error {
 
 	for _, dir := range mappingRules {
 		sshArgs := []string{"-o", "BatchMode=yes", "-o", "ConnectTimeout=5", remoteHost, "test", "-d", dir}
-		if err := exec.Command("ssh", sshArgs...).Run(); err != nil {
+		if err := sshCommand("ssh", sshArgs...).Run(); err != nil {
 			return fmt.Errorf("remote directory %q does not exist on %s: %w", dir, remoteHost, err)
 		}
 		break
