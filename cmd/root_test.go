@@ -410,3 +410,27 @@ func TestValidateProductPresenceNilRules(t *testing.T) {
 		t.Fatal("validateProductPresence(nil) = nil, expected an error")
 	}
 }
+
+func TestFormatMappingRules(t *testing.T) {
+	got := formatMappingRules(map[string]string{
+		"src/plib":   "/usr/local/psa/admin/plib/modules/ext",
+		"src/htdocs": "/usr/local/psa/admin/htdocs/modules/ext",
+		"_meta":      "/usr/local/psa/admin/share/modules/ext/_meta",
+	})
+	want := strings.Join([]string{
+		"  _meta      -> /usr/local/psa/admin/share/modules/ext/_meta",
+		"  src/htdocs -> /usr/local/psa/admin/htdocs/modules/ext",
+		"  src/plib   -> /usr/local/psa/admin/plib/modules/ext",
+	}, "\n")
+	if got != want {
+		t.Errorf("formatMappingRules() =\n%s\nwant:\n%s", got, want)
+	}
+
+	if got := formatMappingRules(map[string]string{"": "/remote/dir"}); got != "  . -> /remote/dir" {
+		t.Errorf("formatMappingRules(destination) = %q", got)
+	}
+
+	if got := formatMappingRules(nil); got != "" {
+		t.Errorf("formatMappingRules(nil) = %q, want empty", got)
+	}
+}

@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -268,6 +269,38 @@ func getMappingRules() map[string]string {
 	return nil
 }
 
+func formatMappingRules(mappingRules map[string]string) string {
+	locals := make([]string, 0, len(mappingRules))
+	width := 0
+	for local := range mappingRules {
+		locals = append(locals, local)
+		if l := len(displayLocalPath(local)); l > width {
+			width = l
+		}
+	}
+	sort.Strings(locals)
+
+	var b strings.Builder
+	for _, local := range locals {
+		_, _ = fmt.Fprintf(&b, "  %-*s -> %s\n", width, displayLocalPath(local), mappingRules[local])
+	}
+	return strings.TrimRight(b.String(), "\n")
+}
+
+func displayLocalPath(local string) string {
+	if local == "" {
+		return "."
+	}
+	return local
+}
+
+func printMappingRules(mappingRules map[string]string) {
+	if len(mappingRules) == 0 {
+		return
+	}
+	log.Printf("%s\n%s", color.CyanString("mapping (local -> %s):", remoteHost), formatMappingRules(mappingRules))
+}
+
 func validateRemoteHost(remoteHost string) error {
 	if remoteHost == "" {
 		return errors.New("unable to connect: REMOTE_HOST is not set via environment variable or .env file")
@@ -361,6 +394,7 @@ func runWatcher() error {
 	if err := validateProductPresence(mappingRules); err != nil {
 		return err
 	}
+	printMappingRules(mappingRules)
 
 	dev, _ := fsevents.DeviceForPath(".")
 	es := &fsevents.EventStream{
