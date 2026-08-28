@@ -3,6 +3,8 @@ project_name: psync
 builds:
   - env:
       - CGO_ENABLED=1
+    ldflags:
+      - -s -w
     goos:
       - darwin
 checksum:
