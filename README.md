@@ -64,6 +64,14 @@ REMOTE_HOST=10.66.1.1 psync diff
 
 Deleted files are removed from the remote host as well. For renamed files, the new path is uploaded and the old one is removed.
 
+To upload the files changed relative to a git ref (committed and uncommitted changes according to
+`git diff --name-status <ref>`, plus untracked files), pass the ref as an argument:
+```
+REMOTE_HOST=10.66.1.1 psync diff <revision>
+REMOTE_HOST=10.66.1.1 psync diff origin/main
+psync diff HEAD~5
+```
+
 The `REMOTE_HOST` variable can also be stored in a `.env` file in the monitored directory. The value must not contain spaces; use a `user@host` form (for example, `REMOTE_HOST=root@10.66.1.1`) or a host alias from your SSH config.
 
 # Limitations

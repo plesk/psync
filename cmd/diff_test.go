@@ -4,6 +4,7 @@ package cmd
 
 import (
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -93,5 +94,114 @@ func TestParseGitStatus(t *testing.T) {
 				t.Errorf("parseGitStatus(%q) removals = %v, expected %v", tt.out, got.removals, tt.removals)
 			}
 		})
+	}
+}
+
+func TestParseGitDiffNameStatus(t *testing.T) {
+	tests := []struct {
+		name     string
+		out      string
+		uploads  []string
+		removals []string
+	}{
+		{
+			"empty output",
+			"",
+			nil,
+			nil,
+		},
+		{
+			"modified and added files",
+			"M\x00src/plib/library/Utils.php\x00A\x00src/htdocs/index.php\x00",
+			[]string{"src/plib/library/Utils.php", "src/htdocs/index.php"},
+			nil,
+		},
+		{
+			"deleted file is removed",
+			"D\x00src/plib/library/Gone.php\x00M\x00src/plib/library/Kept.php\x00",
+			[]string{"src/plib/library/Kept.php"},
+			[]string{"src/plib/library/Gone.php"},
+		},
+		{
+			"renamed file uploads new path and removes old one",
+			"R100\x00src/plib/library/Old.php\x00src/plib/library/New.php\x00M\x00src/htdocs/index.php\x00",
+			[]string{"src/plib/library/New.php", "src/htdocs/index.php"},
+			[]string{"src/plib/library/Old.php"},
+		},
+		{
+			"copied file keeps original",
+			"C075\x00src/plib/library/Original.php\x00src/plib/library/Copy.php\x00",
+			[]string{"src/plib/library/Copy.php"},
+			nil,
+		},
+		{
+			"type change is uploaded",
+			"T\x00src/htdocs/link.php\x00",
+			[]string{"src/htdocs/link.php"},
+			nil,
+		},
+		{
+			"file name with spaces",
+			"M\x00src/htdocs/my file.php\x00",
+			[]string{"src/htdocs/my file.php"},
+			nil,
+		},
+		{
+			"truncated rename entry is ignored",
+			"R100\x00src/plib/library/Old.php\x00",
+			nil,
+			nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := parseGitDiffNameStatus(tt.out)
+			if !slices.Equal(got.uploads, tt.uploads) {
+				t.Errorf("parseGitDiffNameStatus(%q) uploads = %v, expected %v", tt.out, got.uploads, tt.uploads)
+			}
+			if !slices.Equal(got.removals, tt.removals) {
+				t.Errorf("parseGitDiffNameStatus(%q) removals = %v, expected %v", tt.out, got.removals, tt.removals)
+			}
+		})
+	}
+}
+
+func TestParseUntrackedFiles(t *testing.T) {
+	tests := []struct {
+		name  string
+		out   string
+		files []string
+	}{
+		{"empty output", "", nil},
+		{"no untracked files", " M src/a.php\x00D  src/b.php\x00", nil},
+		{
+			"untracked files only",
+			"?? src/new.php\x00 M src/a.php\x00?? docs/my file.md\x00",
+			[]string{"src/new.php", "docs/my file.md"},
+		},
+		{
+			"rename original path is not mistaken for an entry",
+			"R  src/new.php\x00?? tricky\x00?? src/really-new.php\x00",
+			[]string{"src/really-new.php"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := parseUntrackedFiles(tt.out); !slices.Equal(got, tt.files) {
+				t.Errorf("parseUntrackedFiles(%q) = %v, expected %v", tt.out, got, tt.files)
+			}
+		})
+	}
+}
+
+func TestGetChangedFilesSinceUnknownRef(t *testing.T) {
+	_, err := getChangedFilesSince("psync-nonexistent-ref")
+	if err == nil {
+		t.Fatal("getChangedFilesSince() expected an error for unknown ref")
+	}
+	if !strings.Contains(err.Error(), "git diff failed") || !strings.Contains(err.Error(), "psync-nonexistent-ref") {
+		t.Errorf("getChangedFilesSince() error = %q, expected git stderr to be included", err)
 	}
 }
