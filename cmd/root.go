@@ -7,6 +7,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -45,6 +46,22 @@ var currentWorkPath = ""
 var remoteHost = ""
 var workDirFlag = ""
 var destinationFlag = ""
+
+type timestampWriter struct {
+	w io.Writer
+}
+
+func (t timestampWriter) Write(p []byte) (int, error) {
+	if _, err := io.WriteString(t.w, time.Now().Format("15:04:05.000 ")); err != nil {
+		return 0, err
+	}
+	return t.w.Write(p)
+}
+
+func setupLogging() {
+	log.SetFlags(0)
+	log.SetOutput(timestampWriter{w: os.Stderr})
+}
 
 var rootCmd = &cobra.Command{
 	Use:          "psync",
@@ -439,6 +456,7 @@ func runWatcher() error {
 
 func init() {
 	currentWorkPath, _ = os.Getwd()
+	setupLogging()
 }
 
 func Execute() {
