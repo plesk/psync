@@ -33,11 +33,10 @@ var pleskMappingRules = map[string]string{
 }
 
 var pleskExtensionMappingRules = map[string]string{
-	"src/plib":   "/usr/local/psa/admin/plib/modules/<extension-id>",
-	"src/htdocs": "/usr/local/psa/admin/htdocs/modules/<extension-id>",
-	"src/sbin":   "/usr/local/psa/admin/sbin/modules/<extension-id>",
-	"src/_meta":  "/usr/local/psa/admin/share/modules/<extension-id>/_meta",
-	"_meta":      "/usr/local/psa/admin/share/modules/<extension-id>/_meta",
+	"plib":   "/usr/local/psa/admin/plib/modules/<extension-id>",
+	"htdocs": "/usr/local/psa/admin/htdocs/modules/<extension-id>",
+	"sbin":   "/usr/local/psa/admin/sbin/modules/<extension-id>",
+	"_meta":  "/usr/local/psa/admin/share/modules/<extension-id>/_meta",
 }
 
 var ignorePatterns = []string{"*~", ".*.sw?", "*.tmp", "*.tmp.*", ".DS_Store", "Thumbs.db"}
@@ -198,6 +197,25 @@ func fileExists(name string) bool {
 	return true
 }
 
+func dirExists(name string) bool {
+	info, err := os.Stat(name)
+	return err == nil && info.IsDir()
+}
+
+func getPleskExtensionMappingRules(extensionName string, hasSrcDir bool) map[string]string {
+	rules := make(map[string]string, len(pleskExtensionMappingRules)+1)
+	for rule, value := range pleskExtensionMappingRules {
+		value = strings.ReplaceAll(value, "<extension-id>", extensionName)
+		if hasSrcDir {
+			rules["src/"+rule] = value
+		}
+		if !hasSrcDir || rule == "_meta" {
+			rules[rule] = value
+		}
+	}
+	return rules
+}
+
 func isPleskComposer() bool {
 	if !fileExists("composer.json") {
 		return false
@@ -271,10 +289,7 @@ func getMappingRules() map[string]string {
 			return nil
 		}
 
-		rules := make(map[string]string, len(pleskExtensionMappingRules))
-		for rule, value := range pleskExtensionMappingRules {
-			rules[rule] = strings.ReplaceAll(value, "<extension-id>", extensionName)
-		}
+		rules := getPleskExtensionMappingRules(extensionName, dirExists("src"))
 
 		log.Printf("%s %s %s",
 			color.CyanString("Plesk extension"),

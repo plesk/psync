@@ -251,14 +251,43 @@ func TestGetMappingRulesExtensionWithRootMetaFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	rules := getMappingRules()
-	if rules == nil {
-		t.Fatal("getMappingRules() = nil, expected extension mapping rules for a root meta.xml")
+	expected := map[string]string{
+		"plib":   "/usr/local/psa/admin/plib/modules/my-extension",
+		"htdocs": "/usr/local/psa/admin/htdocs/modules/my-extension",
+		"sbin":   "/usr/local/psa/admin/sbin/modules/my-extension",
+		"_meta":  "/usr/local/psa/admin/share/modules/my-extension/_meta",
 	}
 
-	expected := "/usr/local/psa/admin/share/modules/my-extension/_meta"
-	if rules["_meta"] != expected {
-		t.Errorf("getMappingRules()[\"_meta\"] = %q, expected %q", rules["_meta"], expected)
+	rules := getMappingRules()
+	if !maps.Equal(rules, expected) {
+		t.Errorf("getMappingRules() = %v, expected %v", rules, expected)
+	}
+}
+
+func TestGetMappingRulesExtensionWithRootMetaAndSrcDir(t *testing.T) {
+	t.Chdir(t.TempDir())
+
+	for _, dir := range []string{"_meta", "src", filepath.Join("src", "plib")} {
+		if err := os.Mkdir(dir, 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	meta := `<?xml version="1.0"?><module><id>my-extension</id></module>`
+	if err := os.WriteFile("meta.xml", []byte(meta), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	expected := map[string]string{
+		"src/plib":   "/usr/local/psa/admin/plib/modules/my-extension",
+		"src/htdocs": "/usr/local/psa/admin/htdocs/modules/my-extension",
+		"src/sbin":   "/usr/local/psa/admin/sbin/modules/my-extension",
+		"src/_meta":  "/usr/local/psa/admin/share/modules/my-extension/_meta",
+		"_meta":      "/usr/local/psa/admin/share/modules/my-extension/_meta",
+	}
+
+	rules := getMappingRules()
+	if !maps.Equal(rules, expected) {
+		t.Errorf("getMappingRules() = %v, expected %v", rules, expected)
 	}
 }
 
