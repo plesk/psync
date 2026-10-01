@@ -47,6 +47,10 @@ The output looks like the following:
 
 The utility watches the specified directory and sends the changed files to the specified remote host. Files deleted or renamed locally are removed from the remote host as well.
 
+Changes are applied one batch at a time over a single multiplexed SSH connection: files that changed together (for
+example, after a `composer update`) are uploaded as a single `tar` stream and removed with a single `rm` call, instead
+of one `scp`/`ssh` session per file.
+
 By default, the current directory is monitored. Use the `-c` (`--chdir`) flag to monitor another directory without changing into it:
 ```
 REMOTE_HOST=10.66.1.1 psync -c ~/projects/plesk/extensions/ext-broadcast-message

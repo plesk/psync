@@ -170,13 +170,19 @@ func runDiff(base string) error {
 		return err
 	}
 
-	processed := processFiles(changes.uploads, mappingRules, upload)
-	processed += processFiles(changes.removals, mappingRules, removePath)
+	var items []syncItem
+	add := func(file string, sourcePath string, targetPath string) {
+		items = append(items, syncItem{eventPath: file, sourcePath: sourcePath, targetPath: targetPath})
+	}
+	processed := processFiles(changes.uploads, mappingRules, add)
+	processed += processFiles(changes.removals, mappingRules, add)
 
 	if processed == 0 {
 		log.Println("no changed files to upload")
+		return nil
 	}
 
+	syncItems(items)
 	return nil
 }
 

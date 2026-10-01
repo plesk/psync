@@ -17,7 +17,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
 	"github.com/fsnotify/fsevents"
 	"github.com/spf13/cobra"
@@ -102,63 +101,6 @@ func trimPath(targetPath string) string {
 	targetPath = filepath.Join("/", targetPath)
 	targetPath = strings.TrimPrefix(targetPath, currentWorkPath+"/")
 	return targetPath
-}
-
-func upload(eventPath string, sourcePath string, targetPath string) {
-	if isDirectory(eventPath) {
-		uploadDirectory(eventPath, sourcePath, targetPath)
-	} else {
-		uploadFile(eventPath, sourcePath, targetPath)
-	}
-}
-
-func uploadFile(eventPath string, sourcePath string, targetPath string) {
-	s := spinner.New(spinner.CharSets[11], 100*time.Millisecond)
-	s.Start()
-
-	targetFullPath := filepath.Join(targetPath, strings.TrimPrefix(eventPath, sourcePath))
-	out, err := sshCommand("scp", eventPath, remoteHost+":"+targetFullPath).CombinedOutput()
-
-	s.Stop()
-	if err != nil {
-		log.Print(color.RedString("file upload error: %s%s", err, formatCommandOutput(out)))
-		return
-	}
-	log.Printf("updated %s", color.GreenString("%s:%s", remoteHost, targetFullPath))
-}
-
-func uploadDirectory(eventPath string, sourcePath string, targetPath string) {
-	s := spinner.New(spinner.CharSets[11], 100*time.Millisecond)
-	s.Start()
-
-	targetFullPath := filepath.Join(targetPath, strings.TrimPrefix(eventPath, sourcePath))
-	out, err := sshCommand("ssh", remoteHost, "mkdir", "-p", fmt.Sprintf("%q", targetFullPath)).CombinedOutput()
-	if err == nil {
-		scpTarget := remoteHost + ":" + filepath.Dir(targetFullPath)
-		out, err = sshCommand("scp", "-r", filepath.Clean(eventPath), scpTarget).CombinedOutput()
-	}
-
-	s.Stop()
-	if err != nil {
-		log.Print(color.RedString("directory upload error: %s%s", err, formatCommandOutput(out)))
-		return
-	}
-	log.Printf("updated %s", color.GreenString("%s:%s", remoteHost, targetFullPath))
-}
-
-func removePath(eventPath string, sourcePath string, targetPath string) {
-	s := spinner.New(spinner.CharSets[11], 100*time.Millisecond)
-	s.Start()
-
-	targetFullPath := filepath.Join(targetPath, strings.TrimPrefix(eventPath, sourcePath))
-	out, err := sshCommand("ssh", remoteHost, "rm", "-rf", fmt.Sprintf("%q", targetFullPath)).CombinedOutput()
-
-	s.Stop()
-	if err != nil {
-		log.Print(color.RedString("removal error: %s%s", err, formatCommandOutput(out)))
-		return
-	}
-	log.Printf("removed %s", color.YellowString("%s:%s", remoteHost, targetFullPath))
 }
 
 func sshCommand(name string, args ...string) *exec.Cmd {
@@ -441,6 +383,7 @@ func runWatcher() error {
 	log.Print(color.New(color.FgGreen, color.Bold).Sprint("watcher is ready..."))
 
 	debounce := newDebouncer(300 * time.Millisecond)
+	queue := newSyncQueue()
 
 	for msg := range es.Events {
 		for _, e := range msg {
@@ -455,11 +398,7 @@ func runWatcher() error {
 					fsevents.ItemRenamed | fsevents.ItemCreated | fsevents.ItemRemoved
 				if e.Flags&changeFlags != 0 {
 					debounce.trigger(eventPath, func() {
-						if fileExists(eventPath) {
-							upload(eventPath, sourcePath, targetPath)
-						} else {
-							removePath(eventPath, sourcePath, targetPath)
-						}
+						queue.add(syncItem{eventPath: eventPath, sourcePath: sourcePath, targetPath: targetPath})
 					})
 				}
 			}
