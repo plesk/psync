@@ -26,9 +26,12 @@ import (
 var Version string
 
 var pleskMappingRules = map[string]string{
-	"common/php/plib":    "/usr/local/psa/admin/plib",
-	"common/php/htdocs":  "/usr/local/psa/admin/htdocs",
-	"common/application": "/usr/local/psa/admin/application",
+	"common/php/plib":                            "/usr/local/psa/admin/plib",
+	"common/php/htdocs":                          "/usr/local/psa/admin/htdocs",
+	"common/application":                         "/usr/local/psa/admin/application",
+	"unix/plesk/php/plib":                        "/usr/local/psa/admin/plib",
+	"unix/plesk/vhosts/templates/default":        "/usr/local/psa/admin/conf/templates/default",
+	"unix/plesk/vhosts/templates/pci_compliance": "/usr/local/psa/admin/conf/templates/pci_compliance",
 }
 
 var pleskExtensionMappingRules = map[string]string{
