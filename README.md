@@ -68,8 +68,8 @@ REMOTE_HOST=10.66.1.1 psync diff
 
 Deleted files are removed from the remote host as well. For renamed files, the new path is uploaded and the old one is removed.
 
-To upload the files changed relative to a git ref (committed and uncommitted changes according to
-`git diff --name-status <ref>`, plus untracked files), pass the ref as an argument:
+To upload the files changed by a particular commit, pass the ref as an argument:
+
 ```
 REMOTE_HOST=10.66.1.1 psync diff <revision>
 REMOTE_HOST=10.66.1.1 psync diff origin/main

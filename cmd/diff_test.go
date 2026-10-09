@@ -167,41 +167,20 @@ func TestParseGitDiffNameStatus(t *testing.T) {
 	}
 }
 
-func TestParseUntrackedFiles(t *testing.T) {
-	tests := []struct {
-		name  string
-		out   string
-		files []string
-	}{
-		{"empty output", "", nil},
-		{"no untracked files", " M src/a.php\x00D  src/b.php\x00", nil},
-		{
-			"untracked files only",
-			"?? src/new.php\x00 M src/a.php\x00?? docs/my file.md\x00",
-			[]string{"src/new.php", "docs/my file.md"},
-		},
-		{
-			"rename original path is not mistaken for an entry",
-			"R  src/new.php\x00?? tricky\x00?? src/really-new.php\x00",
-			[]string{"src/really-new.php"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := parseUntrackedFiles(tt.out); !slices.Equal(got, tt.files) {
-				t.Errorf("parseUntrackedFiles(%q) = %v, expected %v", tt.out, got, tt.files)
-			}
-		})
-	}
-}
-
-func TestGetChangedFilesSinceUnknownRef(t *testing.T) {
-	_, err := getChangedFilesSince("psync-nonexistent-ref")
+func TestGetChangedFilesForRefUnknownRef(t *testing.T) {
+	_, err := getChangedFilesForRef("psync-nonexistent-ref")
 	if err == nil {
-		t.Fatal("getChangedFilesSince() expected an error for unknown ref")
+		t.Fatal("getChangedFilesForRef() expected an error for unknown ref")
+	}
+	if !strings.Contains(err.Error(), "git show failed") || !strings.Contains(err.Error(), "psync-nonexistent-ref") {
+		t.Errorf("getChangedFilesForRef() error = %q, expected git stderr to be included", err)
+	}
+
+	_, err = getChangedFilesForRef("psync-nonexistent-ref..HEAD")
+	if err == nil {
+		t.Fatal("getChangedFilesForRef() expected an error for unknown range")
 	}
 	if !strings.Contains(err.Error(), "git diff failed") || !strings.Contains(err.Error(), "psync-nonexistent-ref") {
-		t.Errorf("getChangedFilesSince() error = %q, expected git stderr to be included", err)
+		t.Errorf("getChangedFilesForRef() error = %q, expected git stderr to be included", err)
 	}
 }

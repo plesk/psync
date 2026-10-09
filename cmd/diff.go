@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
-	"slices"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -43,7 +42,7 @@ type changeset struct {
 
 func getChangedFiles(base string) (changeset, error) {
 	if base != "" {
-		return getChangedFilesSince(base)
+		return getChangedFilesForRef(base)
 	}
 
 	out, err := exec.Command("git", "status", "--porcelain", "-z").Output()
@@ -54,51 +53,23 @@ func getChangedFiles(base string) (changeset, error) {
 	return parseGitStatus(string(out)), nil
 }
 
-func getChangedFilesSince(base string) (changeset, error) {
-	out, err := exec.Command("git", "diff", "--name-status", "-z", base, "--").Output()
+func getChangedFilesForRef(ref string) (changeset, error) {
+	var gitArgs []string
+	if strings.Contains(ref, "..") {
+		gitArgs = []string{"diff", "--name-status", "-z", ref, "--"}
+	} else {
+		gitArgs = []string{"show", "--first-parent", "--name-status", "--format=", "-z", ref, "--"}
+	}
+
+	out, err := exec.Command("git", gitArgs...).Output()
 	if err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) && len(exitErr.Stderr) > 0 {
-			return changeset{}, fmt.Errorf("git diff failed: %s", strings.TrimSpace(string(exitErr.Stderr)))
+		if exitErr, ok := errors.AsType[*exec.ExitError](err); ok && len(exitErr.Stderr) > 0 {
+			return changeset{}, fmt.Errorf("git %s failed: %s", gitArgs[0], strings.TrimSpace(string(exitErr.Stderr)))
 		}
-		return changeset{}, fmt.Errorf("git diff failed: %w", err)
+		return changeset{}, fmt.Errorf("git %s failed: %w", gitArgs[0], err)
 	}
 
-	changes := parseGitDiffNameStatus(string(out))
-
-	statusOut, err := exec.Command("git", "status", "--porcelain", "-z", "--untracked-files=all").Output()
-	if err != nil {
-		return changeset{}, fmt.Errorf("git status failed: %w", err)
-	}
-	for _, file := range parseUntrackedFiles(string(statusOut)) {
-		if !slices.Contains(changes.uploads, file) {
-			changes.uploads = append(changes.uploads, file)
-		}
-	}
-
-	return changes, nil
-}
-
-func parseUntrackedFiles(out string) []string {
-	var files []string
-
-	entries := strings.Split(out, "\x00")
-	for i := 0; i < len(entries); i++ {
-		entry := entries[i]
-		if len(entry) < 4 {
-			continue
-		}
-
-		status := entry[:2]
-		if status[0] == 'R' || status[0] == 'C' {
-			i++
-		}
-		if status == "??" {
-			files = append(files, entry[3:])
-		}
-	}
-
-	return files
+	return parseGitDiffNameStatus(string(out)), nil
 }
 
 func parseGitDiffNameStatus(out string) changeset {
