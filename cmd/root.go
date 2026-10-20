@@ -3,6 +3,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
@@ -11,10 +12,12 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path"
 	"path/filepath"
 	"sort"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/fatih/color"
@@ -376,6 +379,15 @@ func runWatcher() error {
 	}
 	printMappingRules(mappingRules)
 
+	unregister, err := registerInstance(currentWorkPath, remoteHost)
+	if err != nil {
+		return err
+	}
+	defer unregister()
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	dev, _ := fsevents.DeviceForPath(".")
 	es := &fsevents.EventStream{
 		Paths:   []string{"."},
@@ -391,27 +403,38 @@ func runWatcher() error {
 	debounce := newDebouncer(300 * time.Millisecond)
 	queue := newSyncQueue()
 
-	for msg := range es.Events {
-		for _, e := range msg {
-			eventPath := trimPath(e.Path)
+	for {
+		select {
+		case <-ctx.Done():
+			log.Print("watcher stopped")
+			return nil
+		case msg, ok := <-es.Events:
+			if !ok {
+				return nil
+			}
+			handleEvents(msg, mappingRules, debounce, queue)
+		}
+	}
+}
 
-			for sourcePath, targetPath := range mappingRules {
-				if !strings.HasPrefix(eventPath, sourcePath) || isIgnored(eventPath) {
-					continue
-				}
+func handleEvents(events []fsevents.Event, mappingRules map[string]string, debounce *debouncer, queue *syncQueue) {
+	for _, e := range events {
+		eventPath := trimPath(e.Path)
 
-				const changeFlags = fsevents.ItemModified | fsevents.ItemInodeMetaMod |
-					fsevents.ItemRenamed | fsevents.ItemCreated | fsevents.ItemRemoved
-				if e.Flags&changeFlags != 0 {
-					debounce.trigger(eventPath, func() {
-						queue.add(syncItem{eventPath: eventPath, sourcePath: sourcePath, targetPath: targetPath})
-					})
-				}
+		for sourcePath, targetPath := range mappingRules {
+			if !strings.HasPrefix(eventPath, sourcePath) || isIgnored(eventPath) {
+				continue
+			}
+
+			const changeFlags = fsevents.ItemModified | fsevents.ItemInodeMetaMod |
+				fsevents.ItemRenamed | fsevents.ItemCreated | fsevents.ItemRemoved
+			if e.Flags&changeFlags != 0 {
+				debounce.trigger(eventPath, func() {
+					queue.add(syncItem{eventPath: eventPath, sourcePath: sourcePath, targetPath: targetPath})
+				})
 			}
 		}
 	}
-
-	return nil
 }
 
 func init() {

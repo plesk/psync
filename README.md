@@ -78,6 +78,33 @@ psync diff HEAD~5
 
 The `REMOTE_HOST` variable can also be stored in a `.env` file in the monitored directory. The value must not contain spaces; use a `user@host` form (for example, `REMOTE_HOST=root@10.66.1.1`) or a host alias from your SSH config.
 
+Every running watcher registers itself in the `~/.psync/` directory, so several copies of `psync` can be managed without
+looking through the process list.
+
+To see all running copies and the directories they watch:
+```
+psync list
+```
+```
+PID    PATH                                                 REMOTE HOST
+48213  /Users/john/projects/plesk/extensions/ext-broadcast  root@10.66.1.1
+48377  /Users/john/projects/plesk/plesk                     plesk-dev
+```
+
+To stop particular copies, pass a pid, a remote host, a watched path, or the trailing part of a watched path. Every
+running copy that matches is stopped:
+```
+psync kill 48213
+psync kill plesk-dev
+psync kill ~/projects/plesk/extensions/ext-broadcast
+psync kill ext-broadcast
+```
+
+To stop all running copies:
+```
+psync killall
+```
+
 # Limitations
 
 * The utility runs only on macOS.
