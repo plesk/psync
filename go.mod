@@ -1,6 +1,6 @@
 module github.com/plesk/psync
 
-go 1.26.1
+go 1.27.3
 
 require (
 	github.com/briandowns/spinner v1.23.2
